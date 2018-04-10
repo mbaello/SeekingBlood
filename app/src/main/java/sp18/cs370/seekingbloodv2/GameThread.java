@@ -5,7 +5,7 @@ import android.view.SurfaceHolder;
 
 public class GameThread extends Thread {
     public static final int MAX_FPS = 40;
-    private double averageFPS;
+    private double FPS;
     private SurfaceHolder surfaceHolder;
     private Game game;
 
@@ -42,8 +42,8 @@ public class GameThread extends Thread {
                 canvas = this.surfaceHolder.lockCanvas();
                 synchronized (surfaceHolder) {
                     // Code in here is executed approximately 50 times per second (i.e. 50 FPS)
-                    game.update();
-                    game.draw(canvas);
+                    game.update();      // Updates the game internally
+                    game.draw(canvas);  // Updates the screen
                 }
             } catch(Exception e) {
                 e.printStackTrace();
@@ -65,10 +65,10 @@ public class GameThread extends Thread {
             totalTime += System.nanoTime() - startTime;
             frameCount++;
             if(frameCount == MAX_FPS) {
-                averageFPS = 1000 / ((totalTime / frameCount) / 1000000);
+                FPS = 1000 / ((totalTime / frameCount) / 1000000);
                 frameCount = 0;
                 totalTime = 0;
-                System.out.println("Average FPS = " + averageFPS);
+                System.out.println("FPS = " + FPS);
             }
         }
     }

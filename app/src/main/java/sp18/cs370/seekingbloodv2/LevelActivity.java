@@ -12,7 +12,7 @@ import android.view.MotionEvent;
 import android.view.Window;
 import android.view.WindowManager;
 
-public class MainActivity extends Activity {
+public class LevelActivity extends Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
