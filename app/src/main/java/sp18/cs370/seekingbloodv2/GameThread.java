@@ -4,7 +4,7 @@ import android.graphics.Canvas;
 import android.view.SurfaceHolder;
 
 public class GameThread extends Thread {
-    public static final int MAX_FPS = 40;
+    private static final int MAX_FPS = 50;
     private double FPS;
     private SurfaceHolder surfaceHolder;
     private Game game;
@@ -42,7 +42,7 @@ public class GameThread extends Thread {
                 canvas = this.surfaceHolder.lockCanvas();
                 synchronized (surfaceHolder) {
                     // Code in here is executed approximately 50 times per second (i.e. 50 FPS)
-                    game.update();      // Updates the game internally
+                    game.update();      // Updates the game internally/logically
                     game.draw(canvas);  // Updates the screen
                 }
             } catch(Exception e) {
@@ -60,8 +60,7 @@ public class GameThread extends Thread {
                 if(waitTime > 0) { // Checks to see if the operations were completed fast enough
                     sleep(waitTime); // If they were, cause the thread to sleep to throttle FPS
                 }
-            } catch(Exception e) {e.printStackTrace();};
-
+            } catch(Exception e) {e.printStackTrace();}
             totalTime += System.nanoTime() - startTime;
             frameCount++;
             if(frameCount == MAX_FPS) {

@@ -1,10 +1,10 @@
 package sp18.cs370.seekingbloodv2;
 
 import android.content.Context;
-import android.gesture.Gesture;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Matrix;
 import android.graphics.Rect;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
@@ -28,64 +28,93 @@ public class Game extends SurfaceView implements SurfaceHolder.Callback, Gesture
     private int secondaryTouchX;
     private int secondaryTouchY;
     public ArrayList<Obstructable> obstructables;
+    public ArrayList<Enemy> enemies;
 
     public Game(Context context) {
         super(context);
         getHolder().addCallback(this);
+
         // Create a thread for this SurfaceView (Game)
         gameThread = new GameThread(getHolder(), this);
+
         // Create our Hero (This will be consolidated later to load 1 BMP per Entity
-        hero = new Hero(new Rect((Constants.SCREENWIDTH * 20) / 100, ((Constants.SCREENHEIGHT * 50) / 100), // 50 was 80 was 70
-                (Constants.SCREENWIDTH * 30) / 100, (Constants.SCREENHEIGHT * 70) / 100)); // Hitbox MUST match the sprite!
-        hero.addBmp(BitmapFactory.decodeResource(getResources(), R.drawable.test_stand1)); // Needs to be converted to sprite sheet!
-        hero.addBmp(BitmapFactory.decodeResource(getResources(), R.drawable.test_walk1));
-        hero.addBmp(BitmapFactory.decodeResource(getResources(), R.drawable.test_walk2));
-        hero.addBmp(BitmapFactory.decodeResource(getResources(), R.drawable.test_walk3));
-        hero.addBmp(BitmapFactory.decodeResource(getResources(), R.drawable.test_walk4));
-        hero.addBmp(BitmapFactory.decodeResource(getResources(), R.drawable.test_walk5));
-        hero.addBmp(BitmapFactory.decodeResource(getResources(), R.drawable.test_walk6));
-        hero.addBmp(BitmapFactory.decodeResource(getResources(), R.drawable.test_walk7));
-        hero.addBmp(BitmapFactory.decodeResource(getResources(), R.drawable.test_walk8));
-        hero.addBmp(BitmapFactory.decodeResource(getResources(), R.drawable.test_walk9));
-        hero.addBmp(BitmapFactory.decodeResource(getResources(), R.drawable.test_walk10));
-        hero.addBmp(BitmapFactory.decodeResource(getResources(), R.drawable.test_jump1));
-        Constants.HEROHEIGHT = Constants.SCREENHEIGHT - ((Constants.SCREENHEIGHT * 80) / 100); // Store the Hero's height
+        hero = new Hero(new Rect((Constants.SCREENWIDTH * 2) / 5, ((Constants.SCREENHEIGHT * 4) / 10), // 2/10 to 3/10, 5/10 to 7/10
+                Constants.SCREENWIDTH / 2, (Constants.SCREENHEIGHT * 6) / 10));
+        Bitmap tempBmp = BitmapFactory.decodeResource(getResources(), R.drawable.default_walk_sprites);
+        Constants.HEROWALKSPRITEWIDTH = tempBmp.getWidth() / 10;
+        Constants.HEROWALKSPRITEHEIGHT = tempBmp.getHeight() / 20;
+        hero.setRightBmp(tempBmp);
+        tempBmp = FlipBMP(tempBmp);
+        hero.setLeftBmp(tempBmp);
+        tempBmp = BitmapFactory.decodeResource(getResources(), R.drawable.default_airborne_static);
+        hero.rightAirborneBmp = tempBmp;
+        tempBmp = FlipBMP(tempBmp);
+        hero.leftAirborneBmp = tempBmp;
+        tempBmp = BitmapFactory.decodeResource(getResources(), R.drawable.default_landing_sprites);
+        Constants.HEROLANDSPRITEWIDTH = tempBmp.getWidth() / 45;
+        Constants.HEROLANDSPRITEHEIGHT = tempBmp.getHeight();
+        hero.landingBmp = tempBmp;
+        tempBmp = BitmapFactory.decodeResource(getResources(), R.drawable.default_forward_attack_sprites);
+        System.out.println("Forward Attack Width = " + tempBmp.getWidth());
+        hero.entityHeight = ((Constants.SCREENHEIGHT * 7) / 10) - ((Constants.SCREENHEIGHT * 5) / 10); // Store the Hero's height
+
         // Define the region boundaries and define a Gesture Detector
         fastMoveZoneR = new Rect(0, 0, Constants.SCREENWIDTH / 6, Constants.SCREENHEIGHT / 4);
         slowMoveZoneR = new Rect(0, Constants.SCREENHEIGHT / 4, Constants.SCREENWIDTH / 6, Constants.SCREENHEIGHT / 2);
         slowMoveZoneL = new Rect(0, Constants.SCREENHEIGHT / 2, Constants.SCREENWIDTH / 6, (3 * Constants.SCREENHEIGHT) / 4);
         fastMoveZoneL = new Rect(0, (3 * Constants.SCREENHEIGHT) / 4, Constants.SCREENWIDTH / 6, Constants.SCREENHEIGHT);
         actionZone = new Rect(Constants.SCREENWIDTH / 6, 0, Constants.SCREENWIDTH, Constants.SCREENHEIGHT);
-        // Define an Obstructable (platform/wall)
+
+        // Define the Obstructable (platforms and walls)
         obstructables = new ArrayList<>();
-        Bitmap obsBmp = BitmapFactory.decodeResource(getResources(), R.drawable.test_platform_asset);
-        obstructables.add(new Obstructable(new Rect(0, Constants.SCREENHEIGHT - 10, Constants.SCREENWIDTH, Constants.SCREENHEIGHT + 1000),
-                obsBmp, true)); // Floor
+        tempBmp = BitmapFactory.decodeResource(getResources(), R.drawable.test_platform_asset);
+        obstructables.add(new Obstructable(new Rect(0, Constants.SCREENHEIGHT - 1, Constants.SCREENWIDTH * 2, Constants.SCREENHEIGHT),
+                tempBmp)); // Floor
         obstructables.add(new Obstructable(new Rect(Constants.SCREENWIDTH / 2, (Constants.SCREENHEIGHT * 3) / 4,
-                (Constants.SCREENWIDTH / 2) + 500, ((Constants.SCREENHEIGHT * 3) / 4) + 10), obsBmp, true)); // Platform
+                (Constants.SCREENWIDTH / 2) + 500, ((Constants.SCREENHEIGHT * 3) / 4) + 1), tempBmp)); // Platform
         obstructables.add(new Obstructable(new Rect(250, Constants.SCREENHEIGHT / 2, 750,
-                (Constants.SCREENHEIGHT / 2) + 10), obsBmp, true)); // Platform
-        obstructables.add(new Obstructable(new Rect(-1000, 0, 10, Constants.SCREENHEIGHT), obsBmp, false)); // Left Bounds
-        obstructables.add(new Obstructable(new Rect(Constants.SCREENWIDTH - 10, 0, Constants.SCREENWIDTH + 1000, Constants.SCREENHEIGHT),
-                obsBmp, false)); // Right Bounds
+                (Constants.SCREENHEIGHT / 2) + 1), tempBmp)); // Platform
+        obstructables.add(new Obstructable(new Rect((Constants.SCREENWIDTH * 3) / 2, (Constants.SCREENHEIGHT * 3) / 4, (Constants.SCREENWIDTH * 3) / 2 + 500,
+                ((Constants.SCREENHEIGHT * 3) / 4) + 1), tempBmp)); // Platform
+        obstructables.add(new Obstructable(new Rect((Constants.SCREENWIDTH * 3) / 2, Constants.SCREENHEIGHT / 2, (Constants.SCREENWIDTH * 3) / 2 + 500,
+                        (Constants.SCREENHEIGHT / 2) + 1), tempBmp)); // Platform
+        obstructables.add(new Obstructable(new Rect(0, -Constants.SCREENHEIGHT, 1, Constants.SCREENHEIGHT), tempBmp)); // Left Bounds
+        obstructables.add(new Obstructable(new Rect(Constants.SCREENWIDTH * 2 - 1, -Constants.SCREENHEIGHT, Constants.SCREENWIDTH * 2, Constants.SCREENHEIGHT),
+                tempBmp)); // Right Bounds
+
+        // Define the Enemies
+        enemies = new ArrayList<>();
+        tempBmp = BitmapFactory.decodeResource(getResources(), R.drawable.test_entity);
+        Enemy tempEnemy = new Enemy(new Rect((Constants.SCREENWIDTH * 8) / 10, (Constants.SCREENHEIGHT * 5) / 10,
+                (Constants.SCREENWIDTH * 9) / 10, (Constants.SCREENHEIGHT * 7) / 10));
+        tempEnemy.setRightBmp(tempBmp);
+        tempEnemy.setLeftBmp(tempBmp);
+        tempEnemy.entityHeight = ((Constants.SCREENHEIGHT * 7) / 10) - ((Constants.SCREENHEIGHT * 5) / 10);
+        enemies.add(tempEnemy);
+
         // Create the Gesture Detector which aids in handling swipes
         gestureDetector = new GestureDetector(context, this);
+
         // View can receive focus (i.e. receive touch events?)
         setFocusable(false);
     }
 
     public void update() {
-        hero.update(primaryZone, obstructables); // Update the Hero
+        hero.update(primaryZone, obstructables, enemies); // Update the Hero
         for(int i = 0; i < obstructables.size(); i++) // Update all Obstructables
             obstructables.get(i).update();
+        for(int i = 0; i < enemies.size(); i++) // Update all Enemies
+            enemies.get(i).update(obstructables, hero);
     }
 
     @Override
     public void draw(Canvas canvas) {
         super.draw(canvas);
-        hero.draw(canvas);
-        for(int i = 0; i < obstructables.size(); i++) // Draw all obstructables
+        for(int i = 0; i < enemies.size(); i++)
+            enemies.get(i).draw(canvas);
+        for(int i = 0; i < obstructables.size(); i++) // Draw all Obstructables
             obstructables.get(i).draw(canvas);
+        hero.draw(canvas);
     }
 
     public int GetZonePressed(int x, int y) {
@@ -101,6 +130,12 @@ public class Game extends SurfaceView implements SurfaceHolder.Callback, Gesture
             return 5;
         } else
             return 0;
+    }
+
+    Bitmap FlipBMP(Bitmap bmp) {
+        Matrix matrix = new Matrix();
+        matrix.postScale(-1, 1, bmp.getWidth() / 2f, bmp.getHeight() / 2f);
+        return Bitmap.createBitmap(bmp, 0, 0, bmp.getWidth(), bmp.getHeight(), matrix, true);
     }
 
     // Overridden SurfaceView methods
@@ -157,7 +192,6 @@ public class Game extends SurfaceView implements SurfaceHolder.Callback, Gesture
 
     @Override
     public boolean onDown(MotionEvent e) {
-        System.out.println("onDown called!");
         return true;
     }
 
@@ -185,6 +219,10 @@ public class Game extends SurfaceView implements SurfaceHolder.Callback, Gesture
     public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
         // If there is a larger change in X, the swipe must be horizontal.
         // If there is a larger change in Y, the swipe must be vertical.
+        if(e1 == null || e2 == null) {
+            System.out.println("Null event detected!");
+            return true;
+        }
         int deltaX = abs((int)(e1.getX() - e2.getX()));
         int deltaY = abs((int)(e1.getY() - e2.getY()));
         if(deltaY > deltaX) { // Swipe is vertical
@@ -196,10 +234,21 @@ public class Game extends SurfaceView implements SurfaceHolder.Callback, Gesture
             else
                 System.out.println("Swipe down detected!");
         } else { // Swipe must be horizontal
-            if(e1.getX() > e2.getX())
+            if(e1.getX() > e2.getX()) {
                 System.out.println("Swipe left detected!");
-            else
+                if(hero.isFacingLeft) {
+                    hero.MeleeAttack(1);
+                } else {
+                    hero.MeleeAttack(2);
+                }
+            } else {
                 System.out.println("Swipe right detected!");
+                if(hero.isFacingLeft) {
+                    hero.MeleeAttack(2);
+                } else {
+                    hero.MeleeAttack(1);
+                }
+            }
         }
         return true;
     }

@@ -7,24 +7,18 @@ import android.graphics.Rect;
 public class Obstructable implements GameObject {
     private Bitmap bmp;
     private Rect hitbox;
-    private boolean horizontal;
 
-    public Obstructable(Rect hitbox, Bitmap bmp, boolean horizontal) {
+    public Obstructable(Rect hitbox, Bitmap bmp) {
         this.hitbox = hitbox;
         this.bmp = bmp;
-        this.horizontal = horizontal;
     }
 
     public Rect getHitbox() {
         return hitbox;
     }
 
-    public int getHitboxTop() {
-        return hitbox.top;
-    }
-
-    public boolean isHorizontal() {
-        return horizontal;
+    public void setHitbox(Rect hitbox) {
+        this.hitbox = hitbox;
     }
 
     // Overridden GameObject methods
