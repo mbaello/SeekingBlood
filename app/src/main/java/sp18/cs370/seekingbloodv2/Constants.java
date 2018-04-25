@@ -11,6 +11,6 @@ public class Constants {
     public static int HEROLANDSPRITEWIDTH;
     public static int HEROLANDSPRITEHEIGHT;
     public static int ENEMYSLOWMOVE = 2;
-    public static int ENEMYFASTMOVE = 4; // Might not need this
+    public static int ENEMYFASTMOVE = 4;
     public static int GRAVITY = 2;
 }
