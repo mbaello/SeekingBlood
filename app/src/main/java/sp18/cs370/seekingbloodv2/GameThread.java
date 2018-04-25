@@ -63,12 +63,14 @@ public class GameThread extends Thread {
             } catch(Exception e) {e.printStackTrace();}
             totalTime += System.nanoTime() - startTime;
             frameCount++;
+            /*
             if(frameCount == MAX_FPS) {
                 FPS = 1000 / ((totalTime / frameCount) / 1000000);
                 frameCount = 0;
                 totalTime = 0;
                 System.out.println("FPS = " + FPS);
             }
+            */
         }
     }
 }

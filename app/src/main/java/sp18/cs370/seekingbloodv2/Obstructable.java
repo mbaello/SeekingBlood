@@ -7,10 +7,12 @@ import android.graphics.Rect;
 public class Obstructable implements GameObject {
     private Bitmap bmp;
     private Rect hitbox;
+    boolean isNotPhysical;
 
     public Obstructable(Rect hitbox, Bitmap bmp) {
         this.hitbox = hitbox;
         this.bmp = bmp;
+        this.isNotPhysical = false;
     }
 
     public Rect getHitbox() {

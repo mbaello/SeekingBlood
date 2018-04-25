@@ -3,26 +3,46 @@ package sp18.cs370.seekingbloodv2;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Rect;
-import android.os.Parcelable;
 
 import java.util.ArrayList;
 
-public class Hero extends Entity implements GameObject {
+class Hero extends Entity implements GameObject {
+    Bitmap leftRunBmp;
+    Bitmap rightRunBmp;
+    Bitmap leftJumpBmp;
+    Bitmap rightJumpBmp;
     Bitmap leftAirborneBmp;
     Bitmap rightAirborneBmp;
+    Bitmap leftLandingBmp;
+    Bitmap rightLandingBmp;
     Bitmap leftForwardAttackBmp;
     Bitmap rightForwardAttackBmp;
-    Bitmap landingBmp;
+    Bitmap sample;
+    Rect attackHitbox;
     private boolean isAttacking;
     private boolean isLanding;
-    private double stamina;
-    private double reserve;
-    private int attackTimer;
+    boolean isRecovering;
+    boolean phaseThrough;
+    double stamina;
+    double staminaRestoreCooldown;
+    double reserve;
+    double reserveRestoreCooldown;
+    private int runFrame;
     private int jumpFrame;
+    private int airFrame;
+    private int landFrame;
+    private int attackFrame;
 
     Hero(Rect visualHitbox) {
         this.isAttacking = false;
         this.isLanding = false;
+        this.isRecovering = false;
+        this.phaseThrough = false;
+        this.runFrame = 0;
+        this.jumpFrame = 0;
+        this.airFrame = 0;
+        this.landFrame = 0;
+        this.attackFrame = 0;
         this.visualHitbox = visualHitbox;
         this.physicalHitbox = new Rect(visualHitbox.left, visualHitbox.top, visualHitbox.left + ((visualHitbox.right - visualHitbox.left) / 2), visualHitbox.bottom);
         this.isFacingLeft = false;
@@ -35,13 +55,11 @@ public class Hero extends Entity implements GameObject {
         this.onGround = false;
         this.startJump = false;
         this.entityHeight = 0;
-        this.xFrame = 0;
+        this.frame = 0;
         this.xVelocity = 0;
         this.xVelocityInitial = 0;
-        this.yFrame = 0;
         this.yVelocity = 0;
         this.yVelocityInitial = Constants.HEROJUMPVELOCITY;
-        this.attackTimer = 0;
     }
 
     // Overridden GameObject methods
@@ -49,103 +67,161 @@ public class Hero extends Entity implements GameObject {
     @Override
     public void draw(Canvas canvas) {
         Bitmap bmp;
-        if(isFacingLeft)
-            bmp = leftBmp;
-        else
-            bmp = rightBmp;
-        if(isLanding) {
-            if(xFrame == 0)
-                canvas.drawBitmap(landingBmp, new Rect(0, 0, Constants.HEROLANDSPRITEWIDTH - 1, Constants.HEROLANDSPRITEHEIGHT - 1),
-                        visualHitbox, null);
-            else
-                canvas.drawBitmap(landingBmp, new Rect(Constants.HEROLANDSPRITEWIDTH * xFrame - 1, 0, Constants.HEROLANDSPRITEWIDTH * (xFrame + 1) - 1,
-                        Constants.HEROLANDSPRITEHEIGHT - 1), visualHitbox, null);
-        } else if (!onGround) {
-            if (isFacingLeft)
-                canvas.drawBitmap(leftAirborneBmp, new Rect(0, 0, leftAirborneBmp.getWidth(), leftAirborneBmp.getHeight()),
-                        visualHitbox, null);
-            else
-                canvas.drawBitmap(rightAirborneBmp, new Rect(0, 0, rightAirborneBmp.getWidth(), rightAirborneBmp.getHeight()),
-                        visualHitbox, null);
-        } else if (!isWalking) // Hero is standing
-            canvas.drawBitmap(bmp, new Rect(Constants.HEROWALKSPRITEWIDTH * 9 - 1, Constants.HEROWALKSPRITEHEIGHT * 9 - 1,
-                    Constants.HEROWALKSPRITEWIDTH * 10 - 1, Constants.HEROWALKSPRITEHEIGHT * 10 - 1), visualHitbox, null);
-        else { // Hero is walking
-            if (xFrame == 0 && yFrame == 0)
-                canvas.drawBitmap(bmp, new Rect(0, 0, Constants.HEROWALKSPRITEWIDTH - 1, Constants.HEROWALKSPRITEHEIGHT),
-                        visualHitbox, null);
-            else if (xFrame == 0)
-                canvas.drawBitmap(bmp, new Rect(0, Constants.HEROWALKSPRITEHEIGHT * yFrame - 1, Constants.HEROWALKSPRITEWIDTH,
-                        Constants.HEROWALKSPRITEHEIGHT * (yFrame + 1) - 1), visualHitbox, null);
-            else if (yFrame == 0)
-                canvas.drawBitmap(bmp, new Rect(Constants.HEROWALKSPRITEWIDTH * xFrame - 1, 0, Constants.HEROWALKSPRITEWIDTH * (xFrame + 1) - 1,
-                        Constants.HEROWALKSPRITEHEIGHT - 1), visualHitbox, null);
-            else
-                canvas.drawBitmap(bmp, new Rect(Constants.HEROWALKSPRITEWIDTH * xFrame - 1, Constants.HEROWALKSPRITEHEIGHT * yFrame - 1,
-                                Constants.HEROWALKSPRITEWIDTH * (xFrame + 1) - 1, Constants.HEROWALKSPRITEHEIGHT * (yFrame + 1) - 1),
-                        visualHitbox, null);
+        Rect rect;
+        if(isFacingLeft) { // Facing Left
+            visualHitbox = new Rect(physicalHitbox.right - ((physicalHitbox.right - physicalHitbox.left) * 2), physicalHitbox.top, physicalHitbox.right,
+                    physicalHitbox.bottom);
+            if (!onGround) { // Airborne
+                bmp = leftAirborneBmp;
+                rect = new Rect((int)(Constants.HEROAIRBORNESPRITEWIDTH * airFrame), 0, (int)(Constants.HEROAIRBORNESPRITEWIDTH * (airFrame + 1) - 1),
+                        (int)Constants.HEROAIRBORNESPRITEHEIGHT - 1);
+            } else if (isAttacking) { // Attacking
+                bmp = leftForwardAttackBmp;
+                rect = new Rect((int)(Constants.HEROFORATKSPRITEWIDTH * attackFrame), 0, (int)(Constants.HEROFORATKSPRITEWIDTH * (attackFrame + 1) - 1),
+                        (int)Constants.HEROFORATKSPRITEHEIGHT - 1);
+                visualHitbox = new Rect(visualHitbox.right - (int)((visualHitbox.right - visualHitbox.left) * 1.15), visualHitbox.top,
+                        visualHitbox.right, visualHitbox.bottom);
+                if(attackFrame < 20) {
+                    attackHitbox = new Rect(visualHitbox.left, visualHitbox.top, visualHitbox.left + 20, visualHitbox.bottom);
+                }
+            } else if (startJump) { // Starting Jump
+                bmp = leftJumpBmp;
+                rect = new Rect((int)(Constants.HEROJUMPSPRITEWIDTH * jumpFrame), 0, (int)(Constants.HEROJUMPSPRITEWIDTH * (jumpFrame + 1) - 1),
+                        (int)Constants.HEROJUMPSPRITEHEIGHT - 1);
+            } else if (isLanding) { // Landing
+                bmp = leftLandingBmp;
+                rect = new Rect((int)(Constants.HEROLANDSPRITEWIDTH * landFrame), 0, (int)(Constants.HEROLANDSPRITEWIDTH * (landFrame + 1) - 1),
+                        (int)Constants.HEROLANDSPRITEHEIGHT - 1);
+            } else if (isRunning) { // Running
+                bmp = leftRunBmp;
+                rect = new Rect((int)(Constants.HERORUNSPRITEWIDTH * runFrame), 0, (int)(Constants.HERORUNSPRITEWIDTH * (runFrame + 1) - 1),
+                        (int)Constants.HERORUNSPRITEHEIGHT - 1);
+                visualHitbox = new Rect(visualHitbox.right - (int)((visualHitbox.right - visualHitbox.left) * 0.8), visualHitbox.bottom - (int)((visualHitbox.bottom - visualHitbox.top) * 1.3),
+                        visualHitbox.right, visualHitbox.bottom);
+            } else if (isWalking) { // Walking
+                bmp = leftBmp;
+                rect = new Rect((int)(Constants.HEROWALKSPRITEWIDTH * frame), 0, (int)(Constants.HEROWALKSPRITEWIDTH * (frame + 1) - 1),
+                        (int)Constants.HEROWALKSPRITEHEIGHT - 1);
+            } else { // Idle
+                bmp = leftBmp;
+                rect = new Rect(0, 0, (int)Constants.HEROWALKSPRITEWIDTH - 1, (int)Constants.HEROWALKSPRITEHEIGHT - 1);
+            }
+        } else { // Facing Right
+            visualHitbox = new Rect(physicalHitbox.left, physicalHitbox.top, physicalHitbox.left + ((physicalHitbox.right - physicalHitbox.left) * 2),
+                    physicalHitbox.bottom);
+            if(!onGround) { // Airborne
+                bmp = rightAirborneBmp;
+                rect = new Rect((int)(Constants.HEROAIRBORNESPRITEWIDTH * airFrame), 0, (int)(Constants.HEROAIRBORNESPRITEWIDTH * (airFrame + 1) - 1),
+                        (int)Constants.HEROAIRBORNESPRITEHEIGHT - 1);
+            } else if(isAttacking) { // Attacking
+                bmp = rightForwardAttackBmp;
+                rect = new Rect((int)(Constants.HEROFORATKSPRITEWIDTH * attackFrame), 0, (int)(Constants.HEROFORATKSPRITEWIDTH * (attackFrame + 1) - 1),
+                        (int)Constants.HEROFORATKSPRITEHEIGHT - 1);
+                visualHitbox = new Rect(visualHitbox.left, visualHitbox.top,
+                        visualHitbox.left + (int)((visualHitbox.right - visualHitbox.left) * 1.15), visualHitbox.bottom);
+                if(attackFrame > 80) {
+                    attackHitbox = new Rect(visualHitbox.right - 20, visualHitbox.top, visualHitbox.right, visualHitbox.bottom);
+                }
+            } else if(startJump) { // Starting Jump
+                bmp = rightJumpBmp;
+                rect = new Rect((int)(Constants.HEROJUMPSPRITEWIDTH * jumpFrame), 0, (int)(Constants.HEROJUMPSPRITEWIDTH * (jumpFrame + 1) - 1),
+                        (int)Constants.HEROJUMPSPRITEHEIGHT - 1);
+            } else if(isLanding) { // Landing
+                bmp = rightLandingBmp;
+                rect = new Rect((int)(Constants.HEROLANDSPRITEWIDTH * landFrame), 0, (int)(Constants.HEROLANDSPRITEWIDTH * (landFrame + 1) - 1),
+                        (int)Constants.HEROLANDSPRITEHEIGHT - 1);
+            } else if(isRunning) { // Running
+                bmp = rightRunBmp;
+                rect = new Rect((int)(Constants.HERORUNSPRITEWIDTH * runFrame), 0, (int)(Constants.HERORUNSPRITEWIDTH * (runFrame + 1) - 1),
+                        (int)Constants.HERORUNSPRITEHEIGHT - 1);
+                visualHitbox = new Rect(visualHitbox.left, visualHitbox.bottom - (int)((visualHitbox.bottom - visualHitbox.top) * 1.3),
+                        visualHitbox.left + (int)((visualHitbox.right - visualHitbox.left) * 0.8), visualHitbox.bottom);
+            } else if(isWalking) { // Walking
+                bmp = rightBmp;
+                rect = new Rect((int)(Constants.HEROWALKSPRITEWIDTH * frame), 0, (int)(Constants.HEROWALKSPRITEWIDTH * (frame + 1) - 1),
+                        (int)Constants.HEROWALKSPRITEHEIGHT - 1);
+            } else { // Idle
+                bmp = rightBmp;
+                rect = new Rect(0, 0, (int)Constants.HEROWALKSPRITEWIDTH - 1, (int)Constants.HEROWALKSPRITEHEIGHT - 1);
+            }
         }
+        canvas.drawBitmap(bmp, rect, visualHitbox, null);
+        /*
+        if(isAttacking)
+            canvas.drawBitmap(sample, new Rect(0, 0, sample.getWidth(), sample.getHeight()), attackHitbox, null);
+            */
+        if(!isAttacking)
+            attackHitbox = new Rect(0, 0, 0, 0);
     }
 
     @Override
-    public void update() {
-        if(isLanding) {
-            if(xFrame < 0) {
-                xFrame = 0;
-            } else if(xFrame == 45) {
-                isLanding = false;
-            } else {
-                xFrame++;
+    public void update() { // Apply the visual hitbox change, check the state, and update the frame
+        // System.out.println("[Hero] Attack Frame = " + attackFrame + ", Attacking = " + isAttacking);
+        // System.out.println("[Hero] Air Frame = " + airFrame + ", Airborne = " + !onGround);
+        // System.out.println("[Hero] Stamina = " + stamina);
+        // System.out.println("[Hero] Stamina CD = " + staminaRestoreCooldown);
+        // System.out.println("[Hero] Reserve CD = " + reserveRestoreCooldown);
+        if(isFacingLeft) {
+            if (!onGround) { // Airborne
+                if (airFrame < 1)
+                    airFrame = 60;
+                else
+                    airFrame--;
+            } else if (isAttacking) {
+                if (attackFrame < 4) {
+                    isAttacking = false;
+                    attackFrame = 101;
+                } else
+                    attackFrame -= 3;
+            } else if (startJump) {
+                jumpFrame -= 4;
+            } else if (isLanding) {
+                if (landFrame < 3) {
+                    landFrame = 44;
+                    isLanding = false;
+                } else
+                    landFrame -= 2;
+            } else if (isRunning) {
+                if (runFrame < 1)
+                    runFrame = 54;
+                else
+                    runFrame--;
+            } else if (isWalking) {
+                if (frame < 1)
+                    frame = 67;
+                else
+                    frame--;
             }
-        } else if(isAttacking) {
-            System.out.println("Attacking!");
-            attackTimer++;
-            if(attackTimer == 20)
-                isAttacking = false;
-            // After certain frames, set isAttacking to false. Set hitbox to 0, 0, 0, 0.
-        } else if(isRunning) { // Running
-            if(isFacingLeft) { // Facing Left
-                visualHitbox = new Rect(physicalHitbox.right - ((physicalHitbox.right - physicalHitbox.left) * 2), physicalHitbox.top, physicalHitbox.right,
-                        physicalHitbox.bottom);
-                xFrame -= 2;
-                if(xFrame < 0) {
-                    xFrame = 9;
-                    yFrame -= 2;
-                    if(yFrame < 0)
-                        yFrame = 19;
-                }
-            } else { // Facing Right
-                visualHitbox = new Rect(physicalHitbox.left, physicalHitbox.top, physicalHitbox.left + ((physicalHitbox.right - physicalHitbox.left) * 2),
-                        physicalHitbox.bottom);
-                xFrame += 2;
-                if(xFrame > 9) {
-                    xFrame = 0;
-                    yFrame += 2;
-                    if(yFrame > 19)
-                        yFrame = 0;
-                }
-            }
-        } else if(isWalking) { // Walking
-            if(isFacingLeft) { // Facing Left
-                visualHitbox = new Rect(physicalHitbox.right - ((physicalHitbox.right - physicalHitbox.left) * 2), physicalHitbox.top, physicalHitbox.right,
-                        physicalHitbox.bottom);
-                xFrame--;
-                if(xFrame < 0) {
-                    xFrame = 9;
-                    yFrame--;
-                    if(yFrame < 0)
-                        yFrame = 19;
-                }
-            } else { // Facing Right
-                visualHitbox = new Rect(physicalHitbox.left, physicalHitbox.top, physicalHitbox.left + ((physicalHitbox.right - physicalHitbox.left) * 2),
-                        physicalHitbox.bottom);
-                xFrame++;
-                if(xFrame > 9) {
-                    xFrame = 0;
-                    yFrame++;
-                    if(yFrame > 19)
-                        yFrame = 0;
-                }
+        } else {
+            if (!onGround) { // Airborne
+                if (airFrame > 59)
+                    airFrame = 0;
+                else
+                    airFrame++;
+            } else if (isAttacking) { // Attacking
+                if (attackFrame > 97) {
+                    isAttacking = false;
+                    attackFrame = 0;
+                } else
+                    attackFrame += 3;
+            } else if (startJump) { // Starting Jump
+                jumpFrame += 4;
+            } else if (isLanding) { // Landing
+                if (landFrame > 41) {
+                    landFrame = 0;
+                    isLanding = false;
+                } else
+                    landFrame += 2;
+            } else if (isRunning) { // Running
+                if (runFrame > 53)
+                    runFrame = 0;
+                else
+                    runFrame++;
+            } else if (isWalking) { // Walking
+                if (frame > 66)
+                    frame = 0;
+                else
+                    frame++;
             }
         }
     }
@@ -153,45 +229,99 @@ public class Hero extends Entity implements GameObject {
     // Any horizontal movement will change the left and right bounds of the hitbox.
     // Any vertical movement will change the top and bottom bounds of the hitbox.
     public void update(int zone, ArrayList<Obstructable> obstructables, ArrayList<Enemy> enemies) {
-        if(onGround) {
+        if(reserve == 50 && staminaRestoreCooldown == 0)
+            isRecovering = false;
+        if(onGround && !isLanding && !isAttacking && !startJump && !((isRecovering && zone == 1) || (isRecovering && zone == 4))) {
             if (zone == 1) { // Sprint Right
+                if(!ConsumeStamina(0.4))
+                    ConsumeReserve();
                 isFacingLeft = false;
                 isWalking = true;
                 isRunning = true;
+                landFrame = 0;
+                attackFrame = 0;
+                jumpFrame = 0;
                 xVelocity = Constants.HEROFASTMOVE;
                 HeroMove(obstructables, enemies);
             } else if (zone == 2) { // Walk Right
                 isFacingLeft = false;
                 isWalking = true;
                 isRunning = false;
+                landFrame = 0;
+                attackFrame = 0;
+                jumpFrame = 0;
                 xVelocity = Constants.HEROSLOWMOVE;
                 HeroMove(obstructables, enemies);
             } else if (zone == 3) { // Walk Left
                 isFacingLeft = true;
                 isWalking = true;
                 isRunning = false;
-                xVelocity = Constants.HEROSLOWMOVE * -1;
+                landFrame = 44;
+                attackFrame = 101;
+                jumpFrame = 48;
+                xVelocity = -Constants.HEROSLOWMOVE;
                 HeroMove(obstructables, enemies);
             } else if (zone == 4) {// Sprint Left
+                if(!ConsumeStamina(0.4))
+                    ConsumeReserve();
                 isFacingLeft = true;
                 isWalking = true;
                 isRunning = true;
-                xVelocity = Constants.HEROFASTMOVE * -1;
+                landFrame = 44;
+                attackFrame = 101;
+                jumpFrame = 48;
+                xVelocity = -Constants.HEROFASTMOVE;
                 HeroMove(obstructables, enemies);
             } else {
                 isWalking = false;
                 isRunning = false;
-                if(!isLanding)
-                    xFrame = 9;
-                yFrame = 19;
                 xVelocity = 0;
+                frame = 0;
             }
+        } else if (!onGround){
+            switch(zone) {
+                case 1:
+                    xVelocity = Constants.HEROFASTMOVE;
+                    break;
+                case 2:
+                    xVelocity = Constants.HEROSLOWMOVE;
+                    break;
+                case 3:
+                    xVelocity = -Constants.HEROSLOWMOVE;
+                    break;
+                case 4:
+                    xVelocity = -Constants.HEROFASTMOVE;
+                    break;
+            }
+        } else {
+            isWalking = false;
+            isRunning = false;
+            xVelocity = 0;
+            frame = 0;
         }
+        if(isAttacking)
+            HeroAttack(enemies);
         if(isWalking)
             HeroMove(obstructables, enemies);
         // Fall primarily checks for horizontal Obstructables
-        HeroFall(obstructables, enemies);
+        if(!phaseThrough)
+            HeroFall(obstructables, enemies);
         HeroJump(obstructables, enemies);
+        if(reserveRestoreCooldown == 0) {
+            if(reserve + 0.4 >= 50)
+                reserve = 50;
+            else
+                reserve += 0.4;
+        } else {
+            reserveRestoreCooldown--;
+        }
+        if (staminaRestoreCooldown == 0) {
+            if (stamina + 0.4 >= 100)
+                stamina = 100;
+            else
+                stamina += 0.4;
+        } else
+            staminaRestoreCooldown--;
         this.update();
     }
 
@@ -199,13 +329,13 @@ public class Hero extends Entity implements GameObject {
         if (onGround) {
             int collisionCount = 0;
             int tempVelocity = yVelocity + Constants.GRAVITY;
-            Rect newHitbox = new Rect(physicalHitbox.left, physicalHitbox.top + tempVelocity, physicalHitbox.right, physicalHitbox.bottom + tempVelocity);
+            Rect newHitbox = new Rect(physicalHitbox.left, physicalHitbox.bottom - 10, physicalHitbox.right, physicalHitbox.bottom + tempVelocity);
             for (int i = 0; i < obstructables.size(); i++)
-                if (newHitbox.intersect(obstructables.get(i).getHitbox())) // If the character is over nothing...
+                if (newHitbox.intersect(obstructables.get(i).getHitbox()) && !obstructables.get(i).isNotPhysical) // If the character is over nothing...
                     collisionCount++;
             if(collisionCount == 0) {
                 // Then mark them as airborne and have them fall.
-                System.out.println("No floor detected!");
+                System.out.println("[Hero] Falling!");
                 isFalling = true;
                 onGround = false;
             }
@@ -213,15 +343,21 @@ public class Hero extends Entity implements GameObject {
     }
 
     private void HeroJump(ArrayList<Obstructable> obstructables, ArrayList<Enemy> enemies) {
-        if (startJump) {
-            System.out.println("Jumping now!");
+        if (startJump && ((!isFacingLeft && jumpFrame > 39) || (isFacingLeft && jumpFrame < 6))) {
+            if(!ConsumeStamina(10))
+                ConsumeReserve();
             startJump = false;
+            if(isFacingLeft)
+                jumpFrame = 46;
+            else
+                jumpFrame = 1;
             yVelocity = yVelocityInitial;
             // Instead of updating the character, update the screen.
             HeroMove(obstructables, enemies);
             for(Obstructable obs : obstructables)
-                obs.setHitbox(new Rect(obs.getHitbox().left, obs.getHitbox().top - yVelocity, obs.getHitbox().right,
-                        obs.getHitbox().bottom - yVelocity));
+                    obs.setHitbox(new Rect(obs.getHitbox().left, obs.getHitbox().top - yVelocity, obs.getHitbox().right,
+                            obs.getHitbox().bottom - yVelocity));
+
             for(Enemy enemy: enemies)
                 enemy.setPhysicalHitbox(new Rect(enemy.physicalHitbox.left, enemy.physicalHitbox.top - yVelocity, enemy.physicalHitbox.right,
                         enemy.physicalHitbox.bottom - yVelocity));
@@ -229,10 +365,8 @@ public class Hero extends Entity implements GameObject {
         } else if (!onGround) {
             for (int i = 0; i < obstructables.size(); i++) {
                 Rect newHitbox = new Rect(physicalHitbox.left, physicalHitbox.bottom, physicalHitbox.right, physicalHitbox.bottom + yVelocity);
-                if (newHitbox.intersect(obstructables.get(i).getHitbox()) && isFalling) {
-                    System.out.println("Touched down - Not falling anymore!");
+                if (newHitbox.intersect(obstructables.get(i).getHitbox()) && isFalling && !obstructables.get(i).isNotPhysical) {
                     int difference = physicalHitbox.bottom - obstructables.get(i).getHitbox().top;
-                    System.out.println("Difference = " + difference);
                     HeroMove(obstructables, enemies);
                     for(Obstructable obs : obstructables)
                         obs.setHitbox(new Rect(obs.getHitbox().left, obs.getHitbox().top + difference, obs.getHitbox().right,
@@ -243,13 +377,13 @@ public class Hero extends Entity implements GameObject {
                     onGround = true;
                     isFalling = false;
                     isLanding = true;
+                    airFrame = 0;
                     yVelocity = 0;
-                    System.out.println("Ground Top = " + obstructables.get(i).getHitbox().top);
-                    System.out.println("Hero Bottom = " + physicalHitbox.bottom);
                     break;
                 }
             }
-            if (!onGround) {
+            if (!onGround || phaseThrough) {
+                yVelocity += Constants.GRAVITY;
                 HeroMove(obstructables, enemies);
                 for(Obstructable obs : obstructables)
                     obs.setHitbox(new Rect(obs.getHitbox().left, obs.getHitbox().top - yVelocity, obs.getHitbox().right,
@@ -257,16 +391,18 @@ public class Hero extends Entity implements GameObject {
                 for(Enemy enemy: enemies)
                     enemy.setPhysicalHitbox(new Rect(enemy.physicalHitbox.left, enemy.physicalHitbox.top - yVelocity, enemy.physicalHitbox.right,
                             enemy.physicalHitbox.bottom - yVelocity));
-                yVelocity += Constants.GRAVITY;
+                onGround = false;
+                phaseThrough = false;
                 if(yVelocity > 0 && !isFalling) {
                     isFalling = true;
-                    System.out.println("Falling now!");
                 }
             }
         }
     }
 
     private void HeroMove(ArrayList<Obstructable> obstructables, ArrayList<Enemy> enemies) {
+        if(!onGround)
+            System.out.println("[Hero Midair] X-Velocity = " + xVelocity);
         if(IsMoveValid(obstructables)) {
             for (Obstructable obs : obstructables)
                 obs.setHitbox(new Rect(obs.getHitbox().left - xVelocity, obs.getHitbox().top, obs.getHitbox().right - xVelocity,
@@ -277,10 +413,50 @@ public class Hero extends Entity implements GameObject {
         }
     }
 
+    void HeroAttack(ArrayList<Enemy> enemies) {
+        for(Enemy enemy : enemies) {
+            if(attackHitbox.intersect(enemy.visualHitbox) && enemy.hitTimer == 0) {
+                System.out.println("Enemy was hit!");
+                enemy.hitTimer = 12;
+                enemy.isBleeding = true;
+            }
+        }
+    }
+
     void MeleeAttack(int attack) { // Attack 1 is long-range, Attack 2 is short-range
-        if(onGround && !isAttacking) {
-            isAttacking = true;
-            attackTimer = 0;
+        if(onGround && !isAttacking && !isRecovering) {
+            switch(attack) {
+                case 1: // Forward Attack
+                    isAttacking = true;
+                    if(!ConsumeStamina(15))
+                        ConsumeReserve();
+                    break;
+                case 2: // Backward Attack
+                    System.out.println("Do a Backward Attack!");
+                    if(!ConsumeStamina(15))
+                        ConsumeReserve();
+                    break;
+                default:
+            }
+        }
+    }
+
+    boolean ConsumeStamina(double staminaUsage) {
+        staminaRestoreCooldown = 25;
+        stamina -= staminaUsage;
+        return !(stamina < 0);
+    }
+
+    void ConsumeReserve() {
+        if(stamina < 0) { // Take the deduction from stamina and place it on reserve
+            reserve += stamina;
+            stamina = 0;
+            reserveRestoreCooldown = 25;
+            if(reserve < 0) {// If all reserve is depleted, take away health
+                reserve = 0;
+                isRecovering = true;
+                reserveRestoreCooldown = 50;
+            }
         }
     }
 }
