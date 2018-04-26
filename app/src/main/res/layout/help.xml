@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/help_screen">
+
+
+    <Button
+        android:id="@+id/return_button"
+        android:layout_width="94dp"
+        android:layout_height="95dp"
+        android:layout_gravity="center_horizontal|center_vertical"
+        android:rotation="90"
+        android:text="@string/return_button"
+        tools:layout_editor_absoluteX="145dp"
+        tools:layout_editor_absoluteY="247dp" />
+
+</android.support.constraint.ConstraintLayout>

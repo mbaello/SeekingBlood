@@ -12,17 +12,21 @@ import android.view.MotionEvent;
 import android.view.Window;
 import android.view.WindowManager;
 
-public class LevelActivity extends Activity {
+public class  LevelActivity extends Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_level);
         // Get the width and height of the screen
         DisplayMetrics displayMetrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
         Constants.SCREENWIDTH = displayMetrics.widthPixels;
         Constants.SCREENHEIGHT = displayMetrics.heightPixels;
         // Set the content view
-        setContentView(new Game(this));
+        //setContentView(new Game(this));
     }
+
+
+
 }
