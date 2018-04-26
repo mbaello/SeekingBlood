@@ -67,10 +67,10 @@ class Entity {
             int tempVelocity = yVelocity + Constants.GRAVITY;
             Rect newHitbox = new Rect(physicalHitbox.left, physicalHitbox.bottom - 10, physicalHitbox.right, physicalHitbox.bottom + tempVelocity);
             for (int i = 0; i < obstructables.size(); i++)
-                if (newHitbox.intersect(obstructables.get(i).getHitbox()) && !obstructables.get(i).isNotPhysical) // If the character is over nothing...
-                    collisionCount++;
+                if(Rect.intersects(newHitbox, obstructables.get(i).getHitbox()) && !obstructables.get(i).isNotPhysical) // Check for a platform under the character
+                    collisionCount++; // Increase the count for each platform under the character
             if(collisionCount == 0) {
-                // Then mark them as airborne and have them fall.
+                // If there are no platforms under the character, have them fall.
                 System.out.println("Entity - No floor detected!");
                 isFalling = true;
                 onGround = false;
@@ -87,8 +87,8 @@ class Entity {
             // System.out.println("Entity - Jumping!");
         } else if (!onGround) {
             for (int i = 0; i < obstructables.size(); i++) {
-                Rect newHitbox = new Rect(physicalHitbox.left, physicalHitbox.bottom - (entityHeight / 3), physicalHitbox.right, physicalHitbox.bottom + yVelocity);
-                if (newHitbox.intersect(obstructables.get(i).getHitbox()) && isFalling && !obstructables.get(i).isNotPhysical) {
+                Rect newHitbox = new Rect(physicalHitbox.left, physicalHitbox.bottom, physicalHitbox.right, physicalHitbox.bottom + yVelocity);
+                if(Rect.intersects(newHitbox, obstructables.get(i).getHitbox()) && isFalling && !obstructables.get(i).isNotPhysical) {
                     int bottom = obstructables.get(i).getHitbox().top;
                     physicalHitbox = new Rect(physicalHitbox.left, bottom - entityHeight, physicalHitbox.right, bottom);
                     onGround = true;
@@ -117,7 +117,7 @@ class Entity {
     boolean IsMoveValid(ArrayList<Obstructable> obstructables) {
         for(int i = 0; i < obstructables.size(); i++) {
             Rect newHitbox = new Rect(physicalHitbox.left + xVelocity, physicalHitbox.bottom, physicalHitbox.right + xVelocity, physicalHitbox.bottom);
-            if(newHitbox.intersect(obstructables.get(i).getHitbox()) && !obstructables.get(i).isNotPhysical)
+            if(Rect.intersects(newHitbox, obstructables.get(i).getHitbox()) && !obstructables.get(i).isNotPhysical)
                 return false;
         }
         return true;

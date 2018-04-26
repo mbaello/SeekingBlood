@@ -17,8 +17,9 @@ class Hero extends Entity implements GameObject {
     Bitmap rightLandingBmp;
     Bitmap leftForwardAttackBmp;
     Bitmap rightForwardAttackBmp;
-    Bitmap sample;
+    Bitmap sample; // TEMP
     Rect attackHitbox;
+    Sounds sounds;
     private boolean isAttacking;
     private boolean isLanding;
     boolean isRecovering;
@@ -33,7 +34,8 @@ class Hero extends Entity implements GameObject {
     private int landFrame;
     private int attackFrame;
 
-    Hero(Rect visualHitbox) {
+    Hero(Rect visualHitbox, Sounds sounds) {
+        this.sounds = sounds;
         this.isAttacking = false;
         this.isLanding = false;
         this.isRecovering = false;
@@ -305,7 +307,7 @@ class Hero extends Entity implements GameObject {
             HeroMove(obstructables, enemies);
         // Fall primarily checks for horizontal Obstructables
         if(!phaseThrough)
-            HeroFall(obstructables, enemies);
+            HeroFall(obstructables);
         HeroJump(obstructables, enemies);
         if(reserveRestoreCooldown == 0) {
             if(reserve + 0.4 >= 50)
@@ -325,16 +327,16 @@ class Hero extends Entity implements GameObject {
         this.update();
     }
 
-    private void HeroFall(ArrayList<Obstructable> obstructables, ArrayList<Enemy> enemies) {
+    private void HeroFall(ArrayList<Obstructable> obstructables) {
         if (onGround) {
             int collisionCount = 0;
             int tempVelocity = yVelocity + Constants.GRAVITY;
             Rect newHitbox = new Rect(physicalHitbox.left, physicalHitbox.bottom - 10, physicalHitbox.right, physicalHitbox.bottom + tempVelocity);
             for (int i = 0; i < obstructables.size(); i++)
-                if (newHitbox.intersect(obstructables.get(i).getHitbox()) && !obstructables.get(i).isNotPhysical) // If the character is over nothing...
-                    collisionCount++;
+                if(Rect.intersects(newHitbox, obstructables.get(i).getHitbox()) && !obstructables.get(i).isNotPhysical) // Check if the character is over nothing
+                    collisionCount++; // Increment if the character is over a platform
             if(collisionCount == 0) {
-                // Then mark them as airborne and have them fall.
+                // If the character is over nothing, have them fall.
                 System.out.println("[Hero] Falling!");
                 isFalling = true;
                 onGround = false;
@@ -365,7 +367,8 @@ class Hero extends Entity implements GameObject {
         } else if (!onGround) {
             for (int i = 0; i < obstructables.size(); i++) {
                 Rect newHitbox = new Rect(physicalHitbox.left, physicalHitbox.bottom, physicalHitbox.right, physicalHitbox.bottom + yVelocity);
-                if (newHitbox.intersect(obstructables.get(i).getHitbox()) && isFalling && !obstructables.get(i).isNotPhysical) {
+                System.out.println("[HERO] Bottom Range = [" + physicalHitbox.bottom + ", " + physicalHitbox.bottom + yVelocity + "]");
+                if(Rect.intersects(newHitbox, obstructables.get(i).getHitbox()) && isFalling && !obstructables.get(i).isNotPhysical) {
                     int difference = physicalHitbox.bottom - obstructables.get(i).getHitbox().top;
                     HeroMove(obstructables, enemies);
                     for(Obstructable obs : obstructables)
@@ -415,7 +418,7 @@ class Hero extends Entity implements GameObject {
 
     void HeroAttack(ArrayList<Enemy> enemies) {
         for(Enemy enemy : enemies) {
-            if(attackHitbox.intersect(enemy.visualHitbox) && enemy.hitTimer == 0) {
+            if(Rect.intersects(attackHitbox, enemy.visualHitbox) && enemy.hitTimer == 0) {
                 System.out.println("Enemy was hit!");
                 enemy.hitTimer = 12;
                 enemy.isBleeding = true;

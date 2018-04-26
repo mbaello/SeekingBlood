@@ -21,8 +21,8 @@
         </activity>
         <activity
             android:name=".TitleActivity"
-            android:label="@string/title_activity_title"
-            android:theme="@style/AppTheme.NoActionBar" />
+            android:screenOrientation="landscape"
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen" />
     </application>
 
 </manifest>

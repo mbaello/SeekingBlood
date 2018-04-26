@@ -21,8 +21,7 @@ public class Constants {
     public static int HEROSLOWMOVE = 2;
     public static int HEROFASTMOVE = 5;
     public static int HEROJUMPVELOCITY = -30;
-    public static int ENEMYMOVESPEEDONE;
-    public static int ENEMYMOVESPEEDTWO;
-    public static int ENEMYMOVESPEEDTHREE;
+    public static int ENEMYSLOWMOVE = 2;
+    public static int ENEMYFASTMOVE = 4;
     public static int GRAVITY = 2;
 }

@@ -5,12 +5,10 @@ import android.graphics.Canvas;
 import android.graphics.Rect;
 
 import java.util.ArrayList;
-import java.util.Random;
 
 public class Enemy extends Entity implements GameObject {
     // Extra variables can go here if necessary
     private int timer;
-    private int timerMax;
 
     Bitmap bleedBmp;
     Rect bleedBox;
@@ -21,10 +19,8 @@ public class Enemy extends Entity implements GameObject {
 
     // Constructor
     Enemy(Rect visualHitbox) {
-        Random rand = new Random(System.nanoTime());
         this.health = 200.0;
         this.timer = 0;
-        this.timerMax = rand.nextInt(60) + 60;
         this.visualHitbox = visualHitbox;
         this.physicalHitbox = visualHitbox;
         this.isFacingLeft = false;
@@ -37,8 +33,7 @@ public class Enemy extends Entity implements GameObject {
         this.entityHeight = 0;
         this.frame = 0;
         this.xVelocity = 0;
-        this.xVelocityInitial = rand.nextInt(2) + 2;
-        System.out.println("Enemy has " + xVelocityInitial + " speed!");
+        this.xVelocityInitial = 0;
         this.yVelocity = 0;
         this.yVelocityInitial = Constants.HEROJUMPVELOCITY;
         this.isBleeding = false;
@@ -59,10 +54,20 @@ public class Enemy extends Entity implements GameObject {
 
     @Override
     public void update() {
-        // Conditions/Logic/AI go in here (This method runs approximately 50 times a second)
         visualHitbox = physicalHitbox;
         bleedBox = visualHitbox;
-        // System.out.println("Bleed Timer = " + bleedTimer + "Bleed Frame = " + bleedFrame);
+        // Conditions/Logic/AI go in here (This method runs approximately 50 times a second)
+        // System.out.println("visualHitbox width = " + visualHitbox.width());
+        // System.out.println("physicalHitbox width = " + physicalHitbox.width());
+        // System.out.println("bleedBox width = " + bleedBox.width());
+        if(timer == 0) {
+            if(isOnGround())
+                // startJump = true;
+                timer++;
+        } else if(timer > 120)
+            timer = 0;
+        else
+            timer++;
         if(isBleeding) {
             if(bleedFrame < 5 && ((bleedTimer % 2) == 0)) {
                 bleedFrame++;
@@ -81,30 +86,91 @@ public class Enemy extends Entity implements GameObject {
     public void update(ArrayList<Obstructable> obstructables, Hero hero) {
         MoveToPlayer(obstructables, hero);
         jumpOnPlatform(obstructables, hero);
+        jumpToPlayer(hero);
+        detectObstruction(obstructables);
+        //detectFall(obstructables, hero);
         Fall(obstructables);
         Jump(obstructables);
+        detectCollision(hero);
         this.update();
     }
 
     public void MoveToPlayer(ArrayList<Obstructable> obstructables, Hero hero) {
         int distanceToHero = physicalHitbox.left - hero.physicalHitbox.left; // If positive, Hero is to the left of the enemy.
         if(distanceToHero > 0) {
-            xVelocity = -xVelocityInitial;
-            Move(obstructables);
+            if(distanceToHero > 300){ //If over 300 units away enemy will sprint
+                xVelocity = -Constants.ENEMYFASTMOVE;
+                Move(obstructables);
+            }
+            else {
+                xVelocity = -Constants.ENEMYSLOWMOVE;
+                Move(obstructables);
+            }
         } else {
-            xVelocity = xVelocityInitial;
-            Move(obstructables);
+            if(distanceToHero < -300){ //If over 300 units away enemy will sprint
+                xVelocity = Constants.ENEMYFASTMOVE;
+                Move(obstructables);
+            }
+            else {
+                xVelocity = Constants.ENEMYSLOWMOVE;
+                Move(obstructables);
+            }
         }
+    }
+
+    public void jumpToPlayer(Hero hero){
+        int heightDifference = physicalHitbox.top - hero.physicalHitbox.bottom;
+        if(timer == 0) {
+            if (heightDifference > 0 && !hero.isOnGround())
+                if (isOnGround() && !startJump)
+                    startJump = true;
+            timer = timer + 2;
+        }
+        else if(timer > 120)
+            timer = 0;
+        else
+            timer = timer + 2;
     }
 
     public void jumpOnPlatform(ArrayList<Obstructable> obstructables, Hero hero){
         int heightDifference = physicalHitbox.top - hero.physicalHitbox.bottom;
         if(heightDifference > 0) {
             for (int i = 0; i < obstructables.size(); i++){
-                Rect platformSearch = new Rect(physicalHitbox.left, physicalHitbox.top + 30, physicalHitbox.right, physicalHitbox.top);
-                if(platformSearch.intersect(obstructables.get(i).getHitbox()) && !obstructables.get(i).isNotPhysical)
+                Rect platformSearch = new Rect(physicalHitbox.left, physicalHitbox.top + 50, physicalHitbox.right, physicalHitbox.bottom);
+                if(platformSearch.intersect(obstructables.get(i).getHitbox()) && !obstructables.get(i).isNotPhysical && !startJump)
                     startJump = true;
             }
+        }
+    }
+
+    public void detectObstruction(ArrayList<Obstructable> obstructables){
+        for (int i = 0; i < obstructables.size(); i++){
+            Rect obstructionSearch = new Rect(physicalHitbox.left + 10, 0, physicalHitbox.right + 10, 0);
+            if(Rect.intersects(obstructionSearch, obstructables.get(i).getHitbox()) && !obstructables.get(i).isNotPhysical)
+                if(isOnGround() && !startJump)
+                    startJump = true;
+        }
+    }
+
+    public void detectFall(ArrayList<Obstructable> obstructables, Hero hero) {
+        int collisionCount = 0;
+        int heightDifference = physicalHitbox.top - hero.physicalHitbox.bottom;
+        if(heightDifference > 0) {
+            for (int i = 0; i < obstructables.size(); i++) {
+                Rect fallSearch = new Rect(physicalHitbox.left + xVelocity, physicalHitbox.top, physicalHitbox.right + xVelocity, physicalHitbox.bottom + 50);
+                if (fallSearch.intersect(obstructables.get(i).getHitbox()) && !obstructables.get(i).isNotPhysical) // If the character is over nothing...
+                    collisionCount++;
+            }
+            if(collisionCount == 0){
+                System.out.println("Fall detected");
+                startJump = true;
+            }
+        }
+    }
+
+    public void detectCollision(Hero hero){
+        if(Rect.intersects(physicalHitbox, hero.physicalHitbox)) {
+            // System.out.println("Collision between hero and enemy!");
         }
     }
 }

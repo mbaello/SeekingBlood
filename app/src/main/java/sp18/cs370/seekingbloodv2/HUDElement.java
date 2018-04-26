@@ -20,6 +20,7 @@ public class HUDElement implements GameObject{
     @Override
     public void draw(Canvas canvas) {
         canvas.drawBitmap(mainRegionBmp, new Rect(0, 0, mainRegionBmp.getWidth(), mainRegionBmp.getHeight()), mainRegion, null);
+        if(tag < 4)
         canvas.drawBitmap(secondaryRegionBmp, new Rect(0, 0, secondaryRegionBmp.getWidth(), secondaryRegionBmp.getHeight()), secondaryRegion, null);
     }
 

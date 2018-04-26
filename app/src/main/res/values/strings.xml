@@ -1,4 +1,9 @@
 <resources>
     <string name="app_name">SeekingBloodV2</string>
     <string name="title_activity_title">TitleActivity</string>
+    <string name="menu_button">Options</string>
+    <string name="help_button">Help</string>
+    <string name="shop_button">Shop</string>
+    <string name="return_button">Back to game</string>
+    <string name="start_button">Press to Start</string>
 </resources>

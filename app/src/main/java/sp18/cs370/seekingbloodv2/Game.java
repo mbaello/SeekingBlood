@@ -23,7 +23,9 @@ public class Game extends SurfaceView implements SurfaceHolder.Callback, Gesture
     private Rect slowMoveZoneR;
     private Rect slowMoveZoneL;
     private Rect fastMoveZoneL;
+    private Rect menuZone;
     private Rect actionZone;
+    private Sounds sounds;
     private int primaryZone;
     private int secondaryTouchX;
     private int secondaryTouchY;
@@ -32,6 +34,7 @@ public class Game extends SurfaceView implements SurfaceHolder.Callback, Gesture
     public ArrayList<Obstructable> obstructables;
     public ArrayList<Enemy> enemies;
     public ArrayList<HUDElement> elements;
+    boolean gamePaused = false;
 
     public Game(Context context) {
         super(context);
@@ -41,50 +44,64 @@ public class Game extends SurfaceView implements SurfaceHolder.Callback, Gesture
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inScaled = false;
 
+        // Initialize Sounds
+        sounds = new Sounds(context);
+
+        // Test Section
+        tempBmp = BitmapFactory.decodeResource(getResources(), R.drawable.default_idle_sprites);
+        System.out.println("BMP HEIGHT = " + tempBmp.getHeight());
+        System.out.println("BMP WIDTH = " + tempBmp.getWidth());
+
         // Create the Hero - Has animations for: walking, running, beginning a jump, airborne,
         // landing, and attacking.
         hero = new Hero(new Rect((Constants.SCREENWIDTH * 2) / 5, ((Constants.SCREENHEIGHT * 6) / 10),
-                Constants.SCREENWIDTH / 2, (Constants.SCREENHEIGHT * 8) / 10));
+                Constants.SCREENWIDTH / 2, (Constants.SCREENHEIGHT * 8) / 10), sounds);
         hero.entityHeight = ((Constants.SCREENHEIGHT * 8) / 10) - ((Constants.SCREENHEIGHT * 6) / 10); // Store the Hero's height
         // Load the Walking Sprite Sheet
-        tempBmp = ResizeBMP(BitmapFactory.decodeResource(getResources(), R.drawable.default_walk_sprites, options));
+        tempBmp = (BitmapFactory.decodeResource(getResources(), R.drawable.default_walk_sprites, options));
         Constants.HEROWALKSPRITEWIDTH = tempBmp.getWidth() / 68;
         Constants.HEROWALKSPRITEHEIGHT = tempBmp.getHeight();
-        System.out.println("WALK SPRITE WIDTH = " + tempBmp.getWidth());
-        System.out.println("WALK SPRITE HEIGHT = " + tempBmp.getHeight());
         hero.setLeftBmp(FlipBMP(tempBmp));
         hero.setRightBmp(tempBmp);
         // Load the Running Sprite Sheet
-        tempBmp = ResizeBMP(BitmapFactory.decodeResource(getResources(), R.drawable.default_run_sprites, options));
+        tempBmp = (BitmapFactory.decodeResource(getResources(), R.drawable.default_run_sprites, options));
         Constants.HERORUNSPRITEWIDTH = tempBmp.getWidth() / 55;
         Constants.HERORUNSPRITEHEIGHT = tempBmp.getHeight();
         hero.leftRunBmp = (FlipBMP(tempBmp));
         hero.rightRunBmp = tempBmp;
         // Load the Jump-Start Sprite Sheet
-        tempBmp = ResizeBMP(BitmapFactory.decodeResource(getResources(), R.drawable.default_jump_start_sprites, options));
+        tempBmp = (BitmapFactory.decodeResource(getResources(), R.drawable.default_jump_start_sprites, options));
         Constants.HEROJUMPSPRITEWIDTH = tempBmp.getWidth() / 48;
         Constants.HEROJUMPSPRITEHEIGHT = tempBmp.getHeight();
         hero.leftJumpBmp = (FlipBMP(tempBmp));
         hero.rightJumpBmp = tempBmp;
         // Load the Airborne Sprite Sheet
-        tempBmp = ResizeBMP(BitmapFactory.decodeResource(getResources(), R.drawable.default_airborne_sprites, options));
+        tempBmp = (BitmapFactory.decodeResource(getResources(), R.drawable.default_airborne_sprites, options));
         Constants.HEROAIRBORNESPRITEWIDTH = tempBmp.getWidth() / 61;
         Constants.HEROAIRBORNESPRITEHEIGHT = tempBmp.getHeight();
         hero.leftAirborneBmp = (FlipBMP(tempBmp));
         hero.rightAirborneBmp = tempBmp;
         // Load the Landing Sprite Sheet
-        tempBmp = ResizeBMP(BitmapFactory.decodeResource(getResources(), R.drawable.default_landing_sprites, options));
+        tempBmp = (BitmapFactory.decodeResource(getResources(), R.drawable.default_landing_sprites, options));
         Constants.HEROLANDSPRITEWIDTH = tempBmp.getWidth() / 45;
         Constants.HEROLANDSPRITEHEIGHT = tempBmp.getHeight();
         hero.leftLandingBmp = (FlipBMP(tempBmp));
         hero.rightLandingBmp = tempBmp;
         // Load the Forward Attack Sprite Sheet
-        tempBmp = ResizeBMP(BitmapFactory.decodeResource(getResources(), R.drawable.default_forward_attack_sprites, options));
+        tempBmp = (BitmapFactory.decodeResource(getResources(), R.drawable.default_forward_attack_sprites, options));
         Constants.HEROFORATKSPRITEWIDTH = tempBmp.getWidth() / 102;
         Constants.HEROFORATKSPRITEHEIGHT = tempBmp.getHeight();
         hero.leftForwardAttackBmp = (FlipBMP(tempBmp));
         hero.rightForwardAttackBmp = tempBmp;
-        hero.sample = ResizeBMP(BitmapFactory.decodeResource(getResources(), R.drawable.test_platform_asset, options));
+        hero.sample = (BitmapFactory.decodeResource(getResources(), R.drawable.test_platform_asset, options));
+
+        // Define the region boundaries and define a Gesture Detector
+        fastMoveZoneR = new Rect(0, 0, Constants.SCREENWIDTH / 6, Constants.SCREENHEIGHT / 4);
+        slowMoveZoneR = new Rect(0, Constants.SCREENHEIGHT / 4, Constants.SCREENWIDTH / 6, Constants.SCREENHEIGHT / 2);
+        slowMoveZoneL = new Rect(0, Constants.SCREENHEIGHT / 2, Constants.SCREENWIDTH / 6, (3 * Constants.SCREENHEIGHT) / 4);
+        fastMoveZoneL = new Rect(0, (3 * Constants.SCREENHEIGHT) / 4, Constants.SCREENWIDTH / 6, Constants.SCREENHEIGHT);
+        actionZone = new Rect(Constants.SCREENWIDTH / 6, 0, Constants.SCREENWIDTH, Constants.SCREENHEIGHT);
+        menuZone = new Rect((Constants.SCREENWIDTH * 9) / 10, 0, Constants.SCREENWIDTH, Constants.SCREENHEIGHT / 10);
 
         // Define the HUD Elements (health, stamina, reserve, menu)
         elements = new ArrayList<>();
@@ -103,13 +120,9 @@ public class Game extends SurfaceView implements SurfaceHolder.Callback, Gesture
         tempElement.mainRegionBmp = BitmapFactory.decodeResource(getResources(), R.drawable.stamina);
         tempElement.secondaryRegionBmp = BitmapFactory.decodeResource(getResources(), R.drawable.empty_resource);
         elements.add(tempElement);
-
-        // Define the region boundaries and define a Gesture Detector
-        fastMoveZoneR = new Rect(0, 0, Constants.SCREENWIDTH / 6, Constants.SCREENHEIGHT / 4);
-        slowMoveZoneR = new Rect(0, Constants.SCREENHEIGHT / 4, Constants.SCREENWIDTH / 6, Constants.SCREENHEIGHT / 2);
-        slowMoveZoneL = new Rect(0, Constants.SCREENHEIGHT / 2, Constants.SCREENWIDTH / 6, (3 * Constants.SCREENHEIGHT) / 4);
-        fastMoveZoneL = new Rect(0, (3 * Constants.SCREENHEIGHT) / 4, Constants.SCREENWIDTH / 6, Constants.SCREENHEIGHT);
-        actionZone = new Rect(Constants.SCREENWIDTH / 6, 0, Constants.SCREENWIDTH, Constants.SCREENHEIGHT);
+        tempElement = new HUDElement(new Rect((Constants.SCREENWIDTH * 9) / 10, 0, Constants.SCREENWIDTH, Constants.SCREENHEIGHT / 10), 4);
+        tempElement.mainRegionBmp = BitmapFactory.decodeResource(getResources(), R.drawable.empty_resource);
+        elements.add(tempElement);
 
         // Define the Obstructable (platforms, walls, and background)
         obstructables = new ArrayList<>();
@@ -124,18 +137,22 @@ public class Game extends SurfaceView implements SurfaceHolder.Callback, Gesture
         obstructables.add(new Obstructable(new Rect(0, -Constants.SCREENHEIGHT, 1, Constants.SCREENHEIGHT), tempBmp)); // Left Bounds
         obstructables.add(new Obstructable(new Rect(Constants.SCREENWIDTH * 2 - 1, -Constants.SCREENHEIGHT, Constants.SCREENWIDTH * 2, Constants.SCREENHEIGHT),
                 tempBmp)); // Right Bounds
-        obstructables.add(new Obstructable(new Rect(0, (Constants.SCREENHEIGHT * 90) / 100 - 1,
-                        (Constants.SCREENWIDTH * 10) / 100, (Constants.SCREENHEIGHT * 90) / 100), tempBmp)); // Platform (0 to 10 wide, 90 bottom)
-        obstructables.add(new Obstructable(new Rect((Constants.SCREENWIDTH * 20) / 100, (Constants.SCREENHEIGHT * 80) / 100 - 1,
-                (Constants.SCREENWIDTH * 30) / 100, (Constants.SCREENHEIGHT * 80) / 100), tempBmp)); // Platform (20 to 30 wide, 70 bottom)
-        obstructables.add(new Obstructable(new Rect((Constants.SCREENWIDTH * 40) / 100, (Constants.SCREENHEIGHT * 90) / 100 - 1,
-                (Constants.SCREENWIDTH * 50) / 100, (Constants.SCREENHEIGHT * 90) / 100), tempBmp)); // Platform (40 to 50 wide, 85 bottom)
+        obstructables.add(new Obstructable(new Rect((Constants.SCREENWIDTH * 20) / 100, (Constants.SCREENHEIGHT * 85) / 100 - 1,
+                (Constants.SCREENWIDTH * 30) / 100, (Constants.SCREENHEIGHT * 85) / 100), tempBmp)); // Platform (20 to 30 wide, 85 bottom)
+        obstructables.add(new Obstructable(new Rect((Constants.SCREENWIDTH * 30) / 100, (Constants.SCREENHEIGHT * 70) / 100 - 1,
+                (Constants.SCREENWIDTH * 40) / 100, (Constants.SCREENHEIGHT * 70) / 100), tempBmp)); // Platform (30 to 40 wide, 70 bottom)
+        obstructables.add(new Obstructable(new Rect((Constants.SCREENWIDTH * 40) / 100, (Constants.SCREENHEIGHT * 55) / 100 - 1,
+                (Constants.SCREENWIDTH * 70) / 100, (Constants.SCREENHEIGHT * 55) / 100), tempBmp)); // Platform (40 to 70 wide, 55 bottom)
+        obstructables.add(new Obstructable(new Rect((Constants.SCREENWIDTH * 70) / 100, (Constants.SCREENHEIGHT * 70) / 100 - 1,
+                (Constants.SCREENWIDTH * 80) / 100, (Constants.SCREENHEIGHT * 70) / 100), tempBmp)); // Platform (70 to 80 wide, 70 bottom)
         obstructables.add(new Obstructable(new Rect((Constants.SCREENWIDTH * 80) / 100, (Constants.SCREENHEIGHT * 85) / 100 - 1,
                 (Constants.SCREENWIDTH * 90) / 100, (Constants.SCREENHEIGHT * 85) / 100), tempBmp)); // Platform (80 to 90 wide, 85 bottom)
-        obstructables.add(new Obstructable(new Rect((Constants.SCREENWIDTH * 80) / 100, (Constants.SCREENHEIGHT * 70) / 100 - 1,
-                (Constants.SCREENWIDTH * 90) / 100, (Constants.SCREENHEIGHT * 70) / 100), tempBmp)); // Platform (80 to 90 wide, 70 bottom)
-        obstructables.add(new Obstructable(new Rect((Constants.SCREENWIDTH * 80) / 100, (Constants.SCREENHEIGHT * 55) / 100 - 1,
-                (Constants.SCREENWIDTH * 90) / 100, (Constants.SCREENHEIGHT * 55) / 100), tempBmp)); // Platform (80 to 90 wide, 55 bottom)
+        obstructables.add(new Obstructable(new Rect((Constants.SCREENWIDTH * 100) / 100, (Constants.SCREENHEIGHT * 80) / 100 - 1,
+                (Constants.SCREENWIDTH * 150) / 100, (Constants.SCREENHEIGHT * 80) / 100), tempBmp)); // Platform (100 to 150 wide, 80 bottom)
+        obstructables.add(new Obstructable(new Rect((Constants.SCREENWIDTH * 100) / 100, (Constants.SCREENHEIGHT * 60) / 100 - 1,
+                (Constants.SCREENWIDTH * 150) / 100, (Constants.SCREENHEIGHT * 60) / 100), tempBmp)); // Platform (100 to 150 wide, 60 bottom)
+        obstructables.add(new Obstructable(new Rect((Constants.SCREENWIDTH * 150) / 100, (Constants.SCREENHEIGHT * 70) / 100 - 1,
+                (Constants.SCREENWIDTH * 200) / 100, (Constants.SCREENHEIGHT * 70) / 100), tempBmp)); // Platform (150 to 200 wide, 70 bottom)
 
         // Define the Enemies
         enemies = new ArrayList<>();
@@ -147,13 +164,7 @@ public class Game extends SurfaceView implements SurfaceHolder.Callback, Gesture
         tempEnemy.entityHeight = ((Constants.SCREENHEIGHT * 8) / 10) - ((Constants.SCREENHEIGHT * 6) / 10);
         tempEnemy.bleedBmp = BitmapFactory.decodeResource(getResources(), R.drawable.blood_effect);
         enemies.add(tempEnemy);
-        tempEnemy = new Enemy(new Rect((Constants.SCREENWIDTH * 11) / 10, (Constants.SCREENHEIGHT * 6) / 10,
-                (Constants.SCREENWIDTH * 12) / 10, (Constants.SCREENHEIGHT * 8) / 10));
-        tempEnemy.setRightBmp(tempBmp);
-        tempEnemy.setLeftBmp(tempBmp);
-        tempEnemy.entityHeight = ((Constants.SCREENHEIGHT * 8) / 10) - ((Constants.SCREENHEIGHT * 6) / 10);
-        tempEnemy.bleedBmp = BitmapFactory.decodeResource(getResources(), R.drawable.blood_effect);
-        enemies.add(tempEnemy);
+
         Constants.BLEEDSPRITEWIDTH = tempEnemy.bleedBmp.getWidth() / 6;
         Constants.BLEEDSPRITEHEIGHT = tempEnemy.bleedBmp.getHeight();
         System.out.println("Declared all!");
@@ -190,16 +201,18 @@ public class Game extends SurfaceView implements SurfaceHolder.Callback, Gesture
     }
 
     public int GetZonePressed(int x, int y) {
-        if(fastMoveZoneR.contains(x, y)) {
+        if (fastMoveZoneR.contains(x, y)) {
             return 1;
-        } else if(slowMoveZoneR.contains(x, y)) {
+        } else if (slowMoveZoneR.contains(x, y)) {
             return 2;
-        } else if(slowMoveZoneL.contains(x, y)) {
+        } else if (slowMoveZoneL.contains(x, y)) {
             return 3;
-        } else if(fastMoveZoneL.contains(x, y)) {
+        } else if (fastMoveZoneL.contains(x, y)) {
             return 4;
-        } else if(actionZone.contains(x, y)) {
+        } else if (menuZone.contains(x, y)) {
             return 5;
+        } else if (actionZone.contains(x, y)) {
+            return 6;
         } else
             return 0;
     }
@@ -208,19 +221,6 @@ public class Game extends SurfaceView implements SurfaceHolder.Callback, Gesture
         Matrix matrix = new Matrix();
         matrix.postScale(-1, 1, bmp.getWidth() / 2f, bmp.getHeight() / 2f);
         return Bitmap.createBitmap(bmp, 0, 0, bmp.getWidth(), bmp.getHeight(), matrix, true);
-    }
-
-    Bitmap ResizeBMP(Bitmap bmp) {
-        /*
-        Matrix matrix = new Matrix();
-        matrix.postScale(2f, 2f);
-        int width = bmp.getWidth();
-        int height = bmp.getHeight();
-        System.out.println("Current BMP Width = " + width + ", BMP Height = " + height);
-        bmp = Bitmap.createBitmap(bmp, 0, 0, width, height, matrix, false);
-        System.out.println("New BMP Width = " + bmp.getWidth() + ", BMP Height = " + bmp.getHeight());
-        */
-        return bmp;
     }
 
     // Overridden SurfaceView methods
@@ -251,8 +251,18 @@ public class Game extends SurfaceView implements SurfaceHolder.Callback, Gesture
 
     @Override
     public boolean onTouchEvent(MotionEvent e) {
-        primaryZone = GetZonePressed((int)e.getX(), (int)e.getY());
-        if (e.getPointerCount() <= 2 && primaryZone != 5) {
+        primaryZone = GetZonePressed((int) e.getX(), (int) e.getY());
+        if(!gameThread.isRunning() && primaryZone == 5 && gameThread.pauseTimer == 25) {
+            gameThread.setRunning(true);
+            if(gameThread.isRunning())
+                System.out.println("GameThread is now set to run!");
+        } else if(primaryZone == 5 && gameThread.pauseTimer == 0) {
+            System.out.println("Pause button press detected!");
+            if(gameThread.isRunning()) {
+                gameThread.setRunning(false);
+                return true;
+            }
+        } else if (e.getPointerCount() <= 2 && primaryZone != 6 && primaryZone != 5) {
             switch (e.getAction() & MotionEvent.ACTION_MASK) {
                 case MotionEvent.ACTION_POINTER_DOWN: {
                     secondaryTouchX = (int) e.getX(1);
