@@ -9,18 +9,16 @@
 
     <LinearLayout
         android:id="@+id/inner_layout"
-        android:layout_width="match_parent"
-        android:layout_height="181dp"
+        android:layout_width="0dp"
+        android:layout_height="245dp"
+        android:layout_marginTop="8dp"
+        android:gravity="center_horizontal|center_vertical"
         android:orientation="horizontal"
-        android:gravity="center"
-        tools:layout_editor_absoluteX="0dp"
-        tools:layout_editor_absoluteY="89dp">
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="54dp"
-            android:layout_gravity="center"
-            android:text="@string/menu_button" />
 
         <Button
             android:id="@+id/help_button"
@@ -38,11 +36,11 @@
 
     </LinearLayout>
 
-
-
-
-
-
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="70dp"
+        android:layout_gravity="center"
+        android:text="@string/menu_button" />
 
 
 </android.support.constraint.ConstraintLayout>

@@ -10,7 +10,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
-            android:name=".LevelActivity"
+            android:name=".TitleActivity"
             android:screenOrientation="landscape"
             android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
             <intent-filter>
@@ -20,8 +20,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".TitleActivity"
-            android:label="@string/title_activity_title"
+            android:name=".LevelActivity"
             android:theme="@style/AppTheme.NoActionBar" />
     </application>
 

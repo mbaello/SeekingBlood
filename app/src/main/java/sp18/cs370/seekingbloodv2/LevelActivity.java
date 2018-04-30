@@ -24,7 +24,7 @@ public class  LevelActivity extends Activity {
         Constants.SCREENWIDTH = displayMetrics.widthPixels;
         Constants.SCREENHEIGHT = displayMetrics.heightPixels;
         // Set the content view
-        //setContentView(new Game(this));
+        setContentView(new Game(this));
     }
 
 
