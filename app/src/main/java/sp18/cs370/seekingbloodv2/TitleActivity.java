@@ -1,5 +1,6 @@
 package sp18.cs370.seekingbloodv2;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -7,7 +8,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
-public class TitleActivity extends AppCompatActivity {
+public class TitleActivity extends Activity {
 
     private Button help_button;
     private Button shop_button;
