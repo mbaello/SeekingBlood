@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/help_screen">
+    android:background="@drawable/help_screen"
+    tools:context=".HelpActivity">
+
+
 
 
     <Button
@@ -14,7 +17,9 @@
         android:layout_gravity="center_horizontal|center_vertical"
         android:rotation="90"
         android:text="@string/return_button"
-        tools:layout_editor_absoluteX="145dp"
-        tools:layout_editor_absoluteY="247dp" />
+        android:layout_marginBottom="170dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"/>
 
 </android.support.constraint.ConstraintLayout>

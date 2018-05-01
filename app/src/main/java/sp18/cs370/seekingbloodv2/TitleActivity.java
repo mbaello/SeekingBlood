@@ -9,16 +9,7 @@ import android.widget.TextView;
 
 public class TitleActivity extends AppCompatActivity {
 
-    public void sendGame(View view) {
-        Intent startNewActivity = new Intent(this, LevelActivity.class);
-        startActivity(startNewActivity);
-
-    }
-
-    public Button start_button;
-    private Button menu_button;
     private Button help_button;
-    private Button return_button;
     private Button shop_button;
 
 
@@ -27,6 +18,38 @@ public class TitleActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_title);
 
+        help_button = (Button) findViewById(R.id.help_button);
+        help_button.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v){
+                openHelpActivity();
+            }
+        });
+
+
+        shop_button = (Button) findViewById(R.id.shop_button);
+        shop_button.setOnClickListener(new View.OnClickListener(){
+                @Override
+                public void onClick(View v){
+                    openShopActivity();
+            }
+        });
+
+
+        }
+
+    public void openHelpActivity() {
+        Intent startHelpActivity = new Intent(this, HelpActivity.class);
+        startActivity(startHelpActivity);
+    }
+
+    public void openShopActivity(){
+        Intent startShopActivity = new Intent(this, ShopActivity.class);
+        startActivity(startShopActivity);
+
 
     }
+
+
+
 }

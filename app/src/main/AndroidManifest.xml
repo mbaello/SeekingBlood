@@ -22,6 +22,9 @@
         <activity
             android:name=".LevelActivity"
             android:theme="@style/AppTheme.NoActionBar" />
+        <activity android:name=".HelpActivity" />
+        <activity android:name=".ShopActivity" />
+        <activity android:name=".StartActivity"></activity>
     </application>
 
 </manifest>
