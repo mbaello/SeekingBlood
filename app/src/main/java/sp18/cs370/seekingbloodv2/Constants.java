@@ -1,27 +1,21 @@
 package sp18.cs370.seekingbloodv2;
 
+import android.media.SoundPool;
+
 public class Constants {
+    // Screen width and height for relative coordinate placement
     public static int SCREENWIDTH;
     public static int SCREENHEIGHT;
-    // Hero Constants for Animation and Speed (Horizontal & Vertical)
-    public static double HEROWALKSPRITEWIDTH;
-    public static double HEROWALKSPRITEHEIGHT;
-    public static double HERORUNSPRITEWIDTH;
-    public static double HERORUNSPRITEHEIGHT;
-    public static double HEROJUMPSPRITEWIDTH;
-    public static double HEROJUMPSPRITEHEIGHT;
-    public static double HEROAIRBORNESPRITEWIDTH;
-    public static double HEROAIRBORNESPRITEHEIGHT;
-    public static double HEROLANDSPRITEWIDTH;
-    public static double HEROLANDSPRITEHEIGHT;
-    public static double HEROFORATKSPRITEWIDTH;
-    public static double HEROFORATKSPRITEHEIGHT;
-    public static int BLEEDSPRITEWIDTH;
-    public static int BLEEDSPRITEHEIGHT;
+    // Constants related to movement
     public static int HEROSLOWMOVE = 2;
     public static int HEROFASTMOVE = 5;
-    public static int HEROJUMPVELOCITY = -30;
+    public static int HEROJUMPVELOCITY = -35;
     public static int ENEMYSLOWMOVE = 2;
     public static int ENEMYFASTMOVE = 4;
+    public static int KNOCKBACKVELOCITY = 15;
     public static int GRAVITY = 2;
+    public static int HERODASHDISTANCE = 150;
+    // Global Soundpool available to all classes
+    public static SoundPool sounds;
+    public static int soundIndex[];
 }
