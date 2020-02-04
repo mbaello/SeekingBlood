@@ -1,3 +1,4 @@
+
 # SeekingBlood
 
 **What is Seeking Blood?**
@@ -7,7 +8,7 @@ Seeking Blood was a test to see how unique gameplay mechanics combined with a mi
   * Combat (Primitive Hitboxes)
   * Resources (i.e. Health, Stamina, and Reserve)
   
-A working APK is available in the root directory of this project. Latest build *should* work for devices running Android 6 (Marshmallow) and up.
+A working APK is available [here](https://drive.google.com/open?id=17J71JUuEssBLEtfo5DboM8B3n2f77eJG). Latest build *should* work for devices running Android 6 (Marshmallow) and up.
 
 On application start, this screen should show up:
 ![Title Screen](https://lh3.googleusercontent.com/W3xp_JgtiyQPTrPlUy9hmNneXw2NuWCUN9sdzicNEcRiijdg5fB4iPpufk67ZmkQAJX5wx8nUR0PswYK80BI1jSqhVMrhN2vULcKscPmFBr1trqxde3g7K4hoAYvY8KS3Yu6DhxBWSedQ7It6xH4R8rTa6S_fYtaJxa2wRpk6Ws_qDmksyofH3ACohhOfKXOJCNFmAeHDYBwUbYEfjVnUX3QpNGgkduBuw2AN3M-XdGQyarDMm6jJZQILwT6au-6Qyu_Tz8_bchJgwHN71XFxdWtJP7FNeI9d-P04NTUeibANsBbQ9K-RIj03yE_1Wv9RI_pWdH1tiLXeRM_Rebj8vOZyMpDn0uFc0DhGL70htCTwQ4F0A5QW99yQ75K-PeIlJqH6QeY5VHX22nU_4Bd-OMFVp1MOXEuXIc-2jtRTCwJfMt9P2kqgYbXC4KPMjstpsl6xZj3uWtPUuaU-zX6j7kWVGDBcxnGjIP0BelTGuBi2DqXk8TGAQf4aNmsG59sGsnlGTzYZ-fHWufO4NjQyK8t4oxFHbOao-txcIspxhMXeykluge8vaiHiQi5C8gIDXqrhd9qbBI2wNTEpnsSUSCVQ_YYSrIunqb-Y2HL5RPysq6n10NvSsLaQgzfH2CixX0WHDgIESolRqQzspFGQc7sv2qs8Mc20cXeOIj8txkxWSF--_gb1wxuu0Ge8Wbn0OeloQ4aQM5l-q84vPwOYMOkLF4Wwy-9n1UZP4sRPIuPwFI=w1846-h898-no)
